@@ -9,6 +9,9 @@ export async function GET(req:NextRequest){
   year:String(a.year),position,releaseId:"",artwork:null,prior:a.quality
  }));
  pool.sort((a,b)=>h(seed+position+a.id)-h(seed+position+b.id));
+ const uniqueArtists:any[]=[]; const seenArtists=new Set<string>();
+ for(const x of pool){const k=x.artist.toLowerCase();if(!seenArtists.has(k)){seenArtists.add(k);uniqueArtists.push(x)}}
+ const deal=(uniqueArtists.length>=5?uniqueArtists:pool).slice(0,5);
  if(pool.length<5)return NextResponse.json({error:"Catalogue needs more albums at this track position."},{status:500});
- return NextResponse.json({tracks:pool.slice(0,5),position,poolSize:pool.length});
+ return NextResponse.json({tracks:deal,position,poolSize:pool.length});
 }
