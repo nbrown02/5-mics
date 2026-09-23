@@ -3,7 +3,8 @@ import {useEffect,useRef,useState} from "react";
 import type {Pick,Track} from "@/lib/types";
 const lengths=[8,10,12,14,16];
 export default function Home(){
- const gameSeed=useRef(`${Date.now()}-${Math.random()}`);\n const [length,setLength]=useState<number|null>(null),[picks,setPicks]=useState<Pick[]>([]),[tracks,setTracks]=useState<Track[]>([]);
+ const gameSeed=useRef(`${Date.now()}-${Math.random()}`);
+ const [length,setLength]=useState<number|null>(null),[picks,setPicks]=useState<Pick[]>([]),[tracks,setTracks]=useState<Track[]>([]);
  const [loading,setLoading]=useState(false),[error,setError]=useState(""),[result,setResult]=useState<any>(null);
  const pos=picks.length+1,done=!!length&&picks.length===length;
  useEffect(()=>{if(!length||done)return;setLoading(true);setError("");fetch(`/api/tracks?position=${pos}&seed=${encodeURIComponent(gameSeed.current)}`).then(async r=>{const d=await r.json();if(!r.ok)throw Error(d.error);return d}).then(d=>setTracks(d.tracks)).catch(e=>setError(e.message)).finally(()=>setLoading(false))},[length,pos,done]);
