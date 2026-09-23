@@ -1,18 +1,27 @@
-# 5 Mics v1.4 — large-catalogue pipeline
+# 5 Mics v1.2 — local catalogue
 
-The app still plays entirely from `data/catalog.json`; there are no MusicBrainz requests during gameplay.
+This build removes MusicBrainz from the gameplay request path completely.
 
-This version also includes the production catalogue pipeline for MusicBrainz's CC0 core dump:
+- US hip-hop only.
+- Track choices come from `data/catalog.json` bundled with the app.
+- No external metadata API call is made while playing.
+- No API rate-limit failure after several tracks.
+- A per-game seed changes the five choices on repeat plays.
+- Hidden scoring remains server-side.
+- No environment variables are required.
 
-1. Import the official `mbdump.tar.bz2` core dump into PostgreSQL using MusicBrainz's documented tooling.
-2. Run `psql ... -f scripts/export-us-albums.sql > us-albums.csv`.
-3. Run `python scripts/build-catalog.py us-albums.csv data/catalog.generated.json`.
-4. Run `python scripts/merge-hiphop.py data/catalog.generated.json`.
+The bundled catalogue is the first local seed. The architecture is now the same one intended for the larger catalogue: expand/import the local data without changing gameplay.
 
-The pipeline selects official US album releases, preserves ordered track positions, deduplicates editions, then filters against an explicit US hip-hop artist set. We intentionally do not use MusicBrainz derived tags/ratings because those are not CC0.
-
-The game API draws from the resulting local JSON and avoids duplicate artists in a five-track hand where possible.
-
-Important: the ZIP does not contain the multi-gigabyte MusicBrainz dump itself. That upstream dump is not suitable for committing to a Vercel/GitHub application repository.
+MusicBrainz core metadata is CC0. For a larger automated catalogue import, use only the CC0 `mbdump.tar.bz2` core dump; do not ingest supplementary tags/ratings unless separately licensed.
 
 © 2026. All rights reserved.
+
+## v1.3 rating changes
+
+Five Mics is intentionally rare. It now requires:
+- 96+ weighted album score
+- no selected track below 90
+- at least half of the album at 95+
+- at least two tracks at 98+
+
+The result screen uses an original five-microphone visual: filled microphones show the awarded rating and outlined/faded microphones show the remainder. It is CSS artwork created for this app rather than copied Source artwork.

@@ -44,14 +44,25 @@ const TRACK_BONUSES:Record<string,number>={
 "doomsday":3,"one beer":3,"otis":3,"power":3,"all falls down":3,"touch the sky":3
 };
 function norm(s:string){return s.toLowerCase().replace(/[’‘]/g,"'").replace(/\s+/g," ").trim()}
+function hash01(s:string){
+ let h=2166136261;
+ for(const c of s){h^=c.charCodeAt(0);h=Math.imul(h,16777619)}
+ return (h>>>0)/4294967295;
+}
 export function qualityPrior(artist:string,album:string,title:string){
  const a=norm(artist), al=norm(album), t=norm(title);
- let best=72;
+ let albumScore=78;
  for(const p of ALBUM_PRIORS){
    const pa=norm(p.artist), pal=norm(p.album);
-   if((a.includes(pa)||pa.includes(a))&&(al===pal||al.includes(pal)||pal.includes(al))){best=Math.max(best,p.score);break}
+   if((a.includes(pa)||pa.includes(a))&&(al===pal||al.includes(pal)||pal.includes(al))){
+     albumScore=p.score; break;
+   }
  }
- const bonus=TRACK_BONUSES[t]||0;
- // Album prior is deliberately compressed: even a classic album can contain a weaker cut.
- return Math.min(99,Math.round(55+best*.40+bonus));
+ // Album reputation is only a starting point. Individual cuts vary widely.
+ // Stable title variation gives every track its own hidden score instead of
+ // awarding every song on a classic album a 95+.
+ const variation=Math.round((hash01(`${a}|${al}|${t}`)-.5)*30); // -15..+15
+ const landmark=(TRACK_BONUSES[t]||0)*3;
+ const base=58+(albumScore-70)*.72;
+ return Math.max(48,Math.min(99,Math.round(base+variation+landmark)));
 }
