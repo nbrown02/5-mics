@@ -1,22 +1,17 @@
-# 5 Mics v1.1
+# 5 Mics v1.2 — local catalogue
 
-This fixes the live catalogue problem in v1.
+This build removes MusicBrainz from the gameplay request path completely.
 
-- US hip-hop only; UK-specific catalogue removed.
-- Real MusicBrainz track-position data.
-- Different games rotate through much larger search windows instead of repeatedly using the first results.
-- MusicBrainz 429/503 responses retry with backoff.
-- Six-hour server/CDN caching reduces upstream calls.
-- Five-choice hands are deliberately mixed across quality tiers.
-- Hidden album scoring remains server-side.
-- Next.js uses the current release at install/deploy time.
+- US hip-hop only.
+- Track choices come from `data/catalog.json` bundled with the app.
+- No external metadata API call is made while playing.
+- No API rate-limit failure after several tracks.
+- A per-game seed changes the five choices on repeat plays.
+- Hidden scoring remains server-side.
+- No environment variables are required.
 
-There are no API keys or environment variables.
+The bundled catalogue is the first local seed. The architecture is now the same one intended for the larger catalogue: expand/import the local data without changing gameplay.
 
-## Deploy
-Replace the existing repo contents with these files, commit and push. Vercel should deploy automatically.
-
-## Architecture note
-This is resilient enough for testing, but a public launch should ingest the catalogue into our own database rather than make MusicBrainz part of the gameplay request path. MusicBrainz's public API is rate-limited and its normal web service is intended for non-commercial use.
+MusicBrainz core metadata is CC0. For a larger automated catalogue import, use only the CC0 `mbdump.tar.bz2` core dump; do not ingest supplementary tags/ratings unless separately licensed.
 
 © 2026. All rights reserved.
