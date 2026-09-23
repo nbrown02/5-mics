@@ -1,24 +1,16 @@
 "use client";
-import {useEffect,useState} from "react";
+import {useEffect,useRef,useState} from "react";
 import type {Pick,Track} from "@/lib/types";
 const lengths=[8,10,12,14,16];
-
 export default function Home(){
- const [length,setLength]=useState<number|null>(null),[picks,setPicks]=useState<Pick[]>([]);
- const [tracks,setTracks]=useState<Track[]>([]),[loading,setLoading]=useState(false),[error,setError]=useState("");
- const [result,setResult]=useState<{score:number,mics:number}|null>(null);
- const pos=picks.length+1, done=length!==null&&picks.length===length;
-
- useEffect(()=>{if(!length||done)return;setLoading(true);setError("");fetch(`/api/tracks?position=${pos}`).then(r=>r.json()).then(d=>{if(d.error)throw new Error(d.error);if(!d.tracks?.length)throw new Error("No tracks found for this position.");setTracks(d.tracks)}).catch(e=>setError(e.message)).finally(()=>setLoading(false))},[length,pos,done]);
-
+ const gameSeed=useRef(`${Date.now()}-${Math.random()}`);\n const [length,setLength]=useState<number|null>(null),[picks,setPicks]=useState<Pick[]>([]),[tracks,setTracks]=useState<Track[]>([]);
+ const [loading,setLoading]=useState(false),[error,setError]=useState(""),[result,setResult]=useState<any>(null);
+ const pos=picks.length+1,done=!!length&&picks.length===length;
+ useEffect(()=>{if(!length||done)return;setLoading(true);setError("");fetch(`/api/tracks?position=${pos}&seed=${encodeURIComponent(gameSeed.current)}`).then(async r=>{const d=await r.json();if(!r.ok)throw Error(d.error);return d}).then(d=>setTracks(d.tracks)).catch(e=>setError(e.message)).finally(()=>setLoading(false))},[length,pos,done]);
  useEffect(()=>{if(!done||result)return;fetch("/api/score",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({picks})}).then(r=>r.json()).then(setResult)},[done,picks,result]);
-
- const choose=(track:Track)=>{setTracks([]);setPicks(v=>[...v,{position:pos,track}])};
- const reset=()=>{setLength(null);setPicks([]);setResult(null);setTracks([])};
-
+ const choose=(t:Track)=>{setTracks([]);setPicks(v=>[...v,{position:pos,track:t}])}; const reset=()=>{gameSeed.current=`${Date.now()}-${Math.random()}`;setLength(null);setPicks([]);setResult(null);setTracks([])};
  return <main><header><div className="brand">5 MICS</div><div className="tag">CAN YOU BUILD A 5 MIC ALBUM?</div></header>
- {!length?<section className="hero"><p className="kicker">THE HIP-HOP ALBUM DRAFT</p><h1>BUILD YOUR<br/>PERFECT ALBUM.</h1><p>Five choices per round. Every song really occupied that position on its original album.</p><h2>HOW MANY TRACKS?</h2><div className="lengths">{lengths.map(n=><button key={n} onClick={()=>setLength(n)}>{n}</button>)}</div></section>:
- done?<section className="result"><p className="kicker">FINAL VERDICT</p>{!result?<h2>JUDGING YOUR ALBUM…</h2>:<><div className="micScore">{result.mics}<span>/5</span></div><h1>{result.mics===5?"5 MICS. CLASSIC.":result.mics===4?"4 MICS. HEAT.":result.mics===3?"3 MICS. SOLID.":"BACK TO THE LAB."}</h1><p className="number">Album score {result.score}</p><div className="tracklist">{picks.map(p=><div key={p.position}><b>{String(p.position).padStart(2,"0")}</b><span>{p.track.title}<small>{p.track.artist} · {p.track.album}{p.track.year?` · ${p.track.year}`:""}</small></span></div>)}</div><button className="again" onClick={reset}>BUILD ANOTHER</button></>}</section>:
- <section className="draft"><div className="progress"><span>TRACK {String(pos).padStart(2,"0")}</span><span>{pos} / {length}</span></div><h1>PICK ONE.</h1><p>All five originally appeared at Track {pos}.</p>{loading?<div className="loading">DIGGING THROUGH THE CRATES…</div>:error?<div className="error">{error}<button onClick={()=>location.reload()}>TRY AGAIN</button></div>:<div className="choices">{tracks.map((t,i)=><button key={t.id+"-"+t.releaseId} onClick={()=>choose(t)}><span className="num">0{i+1}</span><span className="cover">{t.artwork?<img src={t.artwork} alt="" onError={e=>(e.currentTarget.style.display="none")}/>:null}</span><span><strong>{t.title}</strong><small>{t.artist}</small></span><span className="arrow">→</span></button>)}</div>}<div className="chosen">{picks.length} TRACK{picks.length===1?"":"S"} LOCKED</div></section>}
- </main>
+ {!length?<section className="hero"><p className="kicker">THE HIP-HOP ALBUM DRAFT</p><h1>BUILD A<br/>CLASSIC.</h1><p>Pick your album length. For every slot you get five real hip-hop tracks that originally appeared at that exact track number. No going back.</p><h2>HOW MANY TRACKS?</h2><div className="lengths">{lengths.map(n=><button onClick={()=>setLength(n)} key={n}>{n}</button>)}</div></section>
+ :done?<section className="result"><p className="kicker">THE VERDICT</p>{!result?<h2>THE MICS ARE DELIBERATING…</h2>:<><div className="micScore">{result.mics}<span>/5</span></div><h1>{result.mics===5?"CERTIFIED CLASSIC.":result.mics===4?"SERIOUS HEAT.":result.mics===3?"SOLID ALBUM.":result.mics===2?"A FEW JOINTS.":"BACK TO THE LAB."}</h1><p className="number">{result.score} / 100 · weakest pick: Track {result.weakestTrack}</p><div className="tracklist">{picks.map(p=><div key={p.position}><b>{String(p.position).padStart(2,"0")}</b><span>{p.track.title}<small>{p.track.artist} — {p.track.album}{p.track.year?` (${p.track.year})`:""}</small></span></div>)}</div><button className="again" onClick={reset}>RUN IT BACK</button></>}</section>
+ :<section className="draft"><div className="progress"><span>TRACK {String(pos).padStart(2,"0")}</span><span>{pos} / {length}</span></div><h1>PICK ONE.</h1><p>Every choice below was Track {pos} on an official album release.</p>{loading?<div className="state">DIGGING THROUGH THE CRATES…</div>:error?<div className="state">{error}<button onClick={()=>location.reload()}>TRY AGAIN</button></div>:<div className="choices">{tracks.map((t,i)=><button key={t.id+t.releaseId} onClick={()=>choose(t)}><span className="num">0{i+1}</span><span className="cover"><img src={t.artwork||""} alt="" onError={e=>e.currentTarget.style.visibility="hidden"}/></span><span><strong>{t.title}</strong><small>{t.artist}</small></span><span className="arrow">→</span></button>)}</div>}<div className="locked">{picks.length} LOCKED · NO GOING BACK</div></section>}</main>
 }
